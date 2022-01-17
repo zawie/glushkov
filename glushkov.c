@@ -1,59 +1,52 @@
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 // Set definitions.
-#define MAX 256
-#define set_chunk_t long 
-#define set_t set_chunk_t*
-
-set_t
-makeset() 
-{
-      long* set = calloc(MAX/sizeof(set_chunk_t), sizeof(set_chunk_t));  
-      return set;
-}
-
-void
-set_add(set_t set, int entry)
-{
-        int offset = entry/sizeof(set_chunk_t);
-        short bit = entry % sizeof(set_chunk_t);
-        set_chunk_t* chunk = set + offset;
-
-        *chunk = *chunk && 1 >> bit; //Set bit.
-}
-
-void
-set_remove(set_t set, int entry)
-{
-        int offset = entry/sizeof(set_chunk_t);
-        short bit = entry % sizeof(set_chunk_t);
-        set_chunk_t* chunk = set + offset;
-
-        *chunk = *chunk ^ 1 >> bit; //Unset bit.
-}
+#define SET_SIZE 256
 
 bool
-set_contains(set_t set, int entry)
+isKeyChar(char c) {
+        switch(c) {
+                case '(':
+                case ')':
+                case '+':
+                case '*':
+                return true;
+        }
+        return false;
+}
+
+void
+linearize(char* regex, int** linear_regex, char** mapping)
 {
-        int offset = entry/sizeof(set_chunk_t);
-        short bit = entry % sizeof(set_chunk_t);
-        set_chunk_t* chunk = set + offset;
-        printf("bit %i\n", bit);
-        return (*(chunk) && 1 >> bit) == *chunk; //Check if bit is set.
+        int n = (int) strlen(regex);
+        *linear_regex = malloc(n*sizeof(int));
+        *mapping = malloc(n*sizeof(char));
+
+        for(int i = 0; i < n; i++){
+                char c = regex[i];
+                if (!isKeyChar(c)) {
+                        *mapping[i] = regex[i];
+                        *linear_regex[i] = i;
+                }
+        }
+}
+
+int
+glushkov(char* regex)
+{
+        int* lregex = NULL;
+        char* lmapping = NULL;
+
+        linearize(regex, &lregex, &lmapping);
+	return (0);
 }
 
 int
 main(void)
 {
-        set_t s = makeset();
-        int entry = 0;
-        printf("Contains %i?\t %i\n", entry, set_contains(s, entry));
-        set_add(s , entry);
-        printf("Contains %i?\t %i\n", entry, set_contains(s, entry));
-        set_remove(s , entry);
-        printf("Contains %i?\t %i\n", entry, set_contains(s, entry));
-
+        glushkov("baa");
 	return (0);
 }
