@@ -19,7 +19,7 @@ isKeyChar(char c) {
 }
 
 void
-linearize(char* regex, int** linear_regex, char** mapping)
+linearize(char* regex, char** linear_regex, char** mapping)
 {
         int n = (int) strlen(regex);
         *linear_regex = malloc(n*sizeof(int));
@@ -28,25 +28,25 @@ linearize(char* regex, int** linear_regex, char** mapping)
         for(int i = 0; i < n; i++){
                 char c = regex[i];
                 if (!isKeyChar(c)) {
-                        *mapping[i] = regex[i];
-                        *linear_regex[i] = i;
+                        *mapping[i] = c;
                 }
+                *linear_regex[i] = isKeyChar(c) ? c : (char) i;
         }
 }
 
-int
+void
 glushkov(char* regex)
 {
-        int* lregex = NULL;
+        char* lregex = NULL;
         char* lmapping = NULL;
 
         linearize(regex, &lregex, &lmapping);
-	return (0);
 }
 
 int
 main(void)
 {
-        glushkov("baa");
+        char* regex = "baa";
+        glushkov(regex);
 	return (0);
 }
