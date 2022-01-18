@@ -6,6 +6,9 @@
 // Set definitions.
 #define SET_SIZE 256
 
+struct p_node_t {
+        char*
+}
 bool
 isKeyChar(char c) {
         switch(c) {
@@ -18,7 +21,7 @@ isKeyChar(char c) {
         return false;
 }
 
-void
+int
 linearize(char* regex, char** linear_regex, char** mapping)
 {
         int i, j;
@@ -44,6 +47,7 @@ linearize(char* regex, char** linear_regex, char** mapping)
                 }
                 i++;
         }
+        return n;
 }
 
 void
@@ -52,7 +56,17 @@ glushkov(char* regex)
         char* lregex = NULL;
         char* lmapping = NULL;
 
-        linearize(regex, &lregex, &lmapping);
+        //Step 1: Linearize
+        int n = linearize(regex, &lregex, &lmapping);
+
+        //Parse regex
+        p_node_t parse_node = parse(lregex);
+        //Step 2: Compute sets P, D and F
+        //Start characters.
+        char* P = calloc(n*sizeof(bool)); //Set
+
+        char* D = malloc(n*sizeof(char)); //End characters.
+        char* F = malloc(n*sizeof(char)); //Pair characters.
 }
 
 int
@@ -61,7 +75,6 @@ main(void)
         char* regex = "baa\0";
         glushkov(regex);
 
-        
         printf("Done!");
 	return (0);
 }
