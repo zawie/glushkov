@@ -120,7 +120,7 @@ substring(char* str, int i, int j)
         assert (0 <= n);
         char* sub = malloc(n*sizeof(char));
         sub[n+1] = '\0'; 
-        memcpy(sub, str, n);
+        memcpy(sub, str+i, n);
         return sub;
 }
 
@@ -133,7 +133,8 @@ parse(char* expression)
         int n = strlen(expression);
         int l = 0;
         int r = 0;
-
+ 
+        printf("Expression: \"%s\" (n=%i)\n", expression, (int) strlen(expression));
         if (n <= 1) {
                 char c = expression[0];
                 return makeLeafNode(c);
@@ -148,7 +149,6 @@ parse(char* expression)
                 } else if (l - r == 1) {
                         bool isUnaryOp = c == '*';
                         bool isBinaryOp = isOp(c) && !isUnaryOp;
-
                         if (isBinaryOp) {
                                 p_node_t *left_p = parse(substring(expression, 1, i));
                                 p_node_t *right_p = parse(substring(expression, i+1, (int) strlen(expression) - 1));
@@ -194,7 +194,7 @@ compute_A(p_node_t* root_p)
 SimpleSet*
 compute_P(p_node_t* root_p)
 {
-        SimpleSet* P = malloc(sizeof(SimpleSet));
+        SimpleSet* P = (SimpleSet*) malloc(sizeof(SimpleSet));
         set_init(P);
 
         if (root_p == NULL)
@@ -231,7 +231,7 @@ compute_P(p_node_t* root_p)
 SimpleSet*
 compute_D(p_node_t* root_p)
 {
-        SimpleSet* D = malloc(sizeof(SimpleSet));
+        SimpleSet* D = (SimpleSet*) malloc(sizeof(SimpleSet));
         set_init(D);
 
         if (root_p == NULL) {
@@ -252,9 +252,9 @@ compute_D(p_node_t* root_p)
                         set_union(D, L, R);
                 case '.': //D(e) union D(e)A(f)
                         if (compute_A(root_p->right)) {
-                                set_union(D, L, R);
+                                set_union(D, R, L);
                         } else {
-                                *D = *L;  
+                                *D = *R;
                         }
                 case '*': //D(e*) = D(e)
                         *D = *L;
@@ -287,16 +287,13 @@ glushkov(char* regex)
         set_print(D);
 
         // SimpleSet F;
-
-        (void) P;
-        (void) D;
-        // compute_sets(root_p, &P, &D, &F);
 }
 
 int
 main(void)
 {
-        char* regex = "(((a.((a.b)*))*)+((b.a)*))"; //BNAF of (a(ab)*)* + (ba)*
+        //char* regex = "(((a.((a.b)*))*)+((b.a)*))"; //BNAF of (a(ab)*)* + (ba)*
+        char* regex = "(a.b)";
         glushkov(regex);
 
         printf("Done!");
