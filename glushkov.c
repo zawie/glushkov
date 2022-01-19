@@ -50,6 +50,18 @@ set_add_char(SimpleSet* set, char c) {
         return set_add(set, str);
 }
 
+void
+set_print(SimpleSet* set) {
+        uint64_t size;
+        char** arr = set_to_array(set, &size);
+        int n = (int) size;
+        printf("(Size: %i) ", n);
+        for(int i = 0; i < n; i++) 
+                printf("%c, ", (*arr)[i]);
+        printf("\n");
+        return;
+}
+ 
 // int
 // linearize(char* regex, char** linear_regex, char** mapping)
 // {
@@ -210,8 +222,8 @@ compute_P(p_node_t* root_p)
                         *P = *L;
         }
 
-        // free(L);
-        // free(R);
+        free(L);
+        free(R);
 
         return P;
 }
@@ -248,8 +260,8 @@ compute_D(p_node_t* root_p)
                         *D = *L;
         }
 
-        // free(L);
-        // free(R);
+        free(L);
+        free(R);
 
         return D;
 }
@@ -269,6 +281,11 @@ glushkov(char* regex)
         //Step 2: Compute sets P, D and F
         SimpleSet* P = compute_P(root_p);
         SimpleSet* D = compute_P(root_p);
+        printf("P: ");
+        set_print(P);
+        printf("D: ");
+        set_print(D);
+
         // SimpleSet F;
 
         (void) P;
@@ -279,7 +296,7 @@ glushkov(char* regex)
 int
 main(void)
 {
-        char* regex = "(b.(a*))";
+        char* regex = "(((a.((a.b)*))*)+((b.a)*))"; //BNAF of (a(ab)*)* + (ba)*
         glushkov(regex);
 
         printf("Done!");
