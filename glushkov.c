@@ -118,7 +118,7 @@ substring(char* str, int i, int j)
 {
         int n = j - i;
         assert (0 <= n);
-        char* sub = malloc(n*sizeof(char));
+        char* sub = malloc((n+1)*sizeof(char));
         sub[n+1] = '\0'; 
         memcpy(sub, str+i, n);
         return sub;
@@ -212,14 +212,17 @@ compute_P(p_node_t* root_p)
         switch(c) {
                 case '+': //P(e) union P(f)
                         set_union(P, L, R);
+                        break;
                 case '.': //P(e) union A(e)P(f)
                         if (compute_A(root_p->left)) {
                                 set_union(P, L, R);
                         } else {
                                 *P = *L;  
                         }
+                        break;
                 case '*': //P(e*) = P(e)
                         *P = *L;
+                        break;
         }
 
         free(L);
@@ -250,14 +253,17 @@ compute_D(p_node_t* root_p)
         switch(c) {
                 case '+': //D(e) union D(f)
                         set_union(D, L, R);
+                        break;
                 case '.': //D(e) union D(e)A(f)
                         if (compute_A(root_p->right)) {
-                                set_union(D, R, L);
+                                set_union(D, L, R);
                         } else {
                                 *D = *R;
                         }
+                        break;
                 case '*': //D(e*) = D(e)
                         *D = *L;
+                        break;
         }
 
         free(L);
