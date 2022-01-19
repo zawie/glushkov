@@ -3,6 +3,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include "set/src/set.h"
+#include "set/src/set.c"
 
 // Set definitions.
 #define SET_SIZE 256
@@ -38,6 +40,14 @@ isPara(char c) {
 bool
 isKeyChar(char c) {
         return isOp(c) || isPara(c);
+}
+
+int
+set_add_char(SimpleSet* set, char c) {
+        char* str = (char*) malloc(2*sizeof(char));
+        str[0] = c;
+        str[1] = '\0';
+        return set_add(set, str);
 }
 
 // int
@@ -140,13 +150,109 @@ parse(char* expression)
         return NULL;
 }
 
-// void
-// compute_sets(p_node_t* root_p, char** P_p, char** D_p, char** F_p)
-// {
-//         if (!root_p->isOp) {
-//                 char** P_p
-//         }
-// }
+/*
+*Return false if empty, return true if has empty string
+*/
+bool
+compute_A(p_node_t* root_p)
+{
+        if (root_p == NULL) //A(emptyset) = emptyset
+                return false; 
+
+        char c = root_p->c;
+        if (!root_p->isOp)
+                return c == '\0'; //A(emptystr) = {emptystr}, A(a) = emptyset
+
+        bool L = compute_A(root_p->left);
+        bool R = compute_A(root_p->right);
+
+        switch(c) {
+                case '+':
+                        return L || R; //A(e+f) = A(e) union A(f)
+                case '.':
+                        return L && R; //A(e.f) = A(e).A(f)
+                case '*':
+                        return true;
+        }
+        
+        assert(true);
+        return false;
+}
+
+SimpleSet*
+compute_P(p_node_t* root_p)
+{
+        SimpleSet* P = malloc(sizeof(SimpleSet));
+        set_init(P);
+
+        if (root_p == NULL)
+                return P;
+
+        char c = root_p->c;
+        if (!root_p->isOp) {
+                set_add_char(P, c);
+                return P;
+        } 
+
+        SimpleSet* L = compute_P(root_p->left);
+        SimpleSet* R = compute_P(root_p->right);
+
+        switch(c) {
+                case '+': //P(e) union P(f)
+                        set_union(P, L, R);
+                case '.': //P(e) union A(e)P(f)
+                        if (compute_A(root_p->left)) {
+                                set_union(P, L, R);
+                        } else {
+                                *P = *L;  
+                        }
+                case '*': //P(e*) = P(e)
+                        *P = *L;
+        }
+
+        // free(L);
+        // free(R);
+
+        return P;
+}
+
+SimpleSet*
+compute_D(p_node_t* root_p)
+{
+        SimpleSet* D = malloc(sizeof(SimpleSet));
+        set_init(D);
+
+        if (root_p == NULL) {
+                return D;
+        }
+
+        char c = root_p->c;
+        if (!root_p->isOp) {
+                set_add_char(D, c);
+                return D;
+        } 
+
+        SimpleSet* L = compute_D(root_p->left);
+        SimpleSet* R = compute_D(root_p->right);
+
+        switch(c) {
+                case '+': //D(e) union D(f)
+                        set_union(D, L, R);
+                case '.': //D(e) union D(e)A(f)
+                        if (compute_A(root_p->right)) {
+                                set_union(D, L, R);
+                        } else {
+                                *D = *L;  
+                        }
+                case '*': //D(e*) = D(e)
+                        *D = *L;
+        }
+
+        // free(L);
+        // free(R);
+
+        return D;
+}
 
 void
 glushkov(char* regex)
@@ -160,14 +266,13 @@ glushkov(char* regex)
         //Parse regex
         p_node_t* root_p = parse(regex);
 
-        root_p 
-        (void) root_p;
-
         //Step 2: Compute sets P, D and F
-        // int* P = calloc(n, sizeof(bool)); //Set
-        // int* D = calloc(n, sizeof(char)); //End characters.
-        // int* F = calloc(n, sizeof(char)); //Pair characters.
+        SimpleSet* P = compute_P(root_p);
+        SimpleSet* D = compute_P(root_p);
+        // SimpleSet F;
 
+        (void) P;
+        (void) D;
         // compute_sets(root_p, &P, &D, &F);
 }
 
