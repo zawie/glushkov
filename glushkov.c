@@ -3,174 +3,12 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include "parse/parse.h"
 #include "set/src/set.h"
+#include "set_helpers/set_helpers.h"
+#include "parse/parse.c"
 #include "set/src/set.c"
-#include <math.h>
-
-// Set definitions.
-#define SET_SIZE 256
-
-typedef struct p_node {
-        bool isOp;
-        char c;
-        int leaf_id; //Unique ID for leaves
-        struct p_node* left;
-        struct p_node* right;
-        char* str;
-} p_node_t; //Parse node
-
-bool
-isOp(char c) {
-        switch(c) {
-                case '.':
-                case '+':
-                case '*':
-                return true;
-        }
-        return false;
-}
-
-bool
-isPara(char c) {
-        switch(c) {
-                case '(':
-                case ')':
-                return true;
-        }
-        return false;
-}
-
-bool
-isKeyChar(char c) {
-        return isOp(c) || isPara(c);
-}
-
-int
-set_add_node(SimpleSet* set, p_node_t* node) {
-        int id = node->leaf_id; //Unique ID for linerization. 
-        char c = node->c; //Actual character being repsented.
-
-        char* str = (char*) malloc((int)((ceil(log10(id))+2)*sizeof(char)));
-        str[0] = c; 
-        sprintf(str+1, "%i", node->leaf_id); 
-
-        return set_add(set, str);
-}
-
-void
-set_print(SimpleSet* set) {
-        uint64_t size;
-        char** arr = set_to_array(set, &size);
-
-        int n = (int) size;
-        printf("(Size: %i) ", n);
-        for(int i = 0; i < n; i++) 
-                printf("%s, ", arr[i]);
-        printf("\n");
-
-        free(arr);
-        return;
-}
-
-SimpleSet*
-set_concat(SimpleSet* set0, SimpleSet* set1) {
-        SimpleSet* set2 = (SimpleSet*) malloc(sizeof(SimpleSet));
-        set_init(set2);
-
-        uint64_t size0, size1;
-        char** arr0 = set_to_array(set0, &size0);
-        char** arr1 = set_to_array(set1, &size1);
-        for (int i = 0; i < (int) size0; i++) {
-                for (int j = 0; j < (int) size1; j++) {
-                        char* str0 = arr0[i];
-                        char* str1 = arr1[j];
-                        int l0 = (int) strlen(str0);
-                        int l1 = (int) strlen(str1);
-                        char* concat_str = (char *) malloc((l0+l1+1)*sizeof(char));
-                        memcpy(concat_str, str0, l0);
-                        memcpy(concat_str + l0, str1, l1 + 1); // +1 adds '\0' as well.
-                        set_add(set2, concat_str);
-                }          
-        }
-
-        free(arr0);
-        free(arr1);
-        return set2;
-}
-
-p_node_t*
-makeOpNode(char op, p_node_t *left_p, p_node_t *right_p, char* exp)
-{
-        p_node_t* node = (p_node_t*) malloc(sizeof(p_node_t));
-        node->isOp = true;
-        node->c = op;
-        node->left = left_p; 
-        node->right = right_p;
-        node->str = exp;
-        return node;
-}
-
-p_node_t*
-makeLeafNode(char c, char* exp)
-{
-        static int id = 0;
-        p_node_t* node = (p_node_t*) malloc(sizeof(p_node_t));
-        node->isOp = false;
-        node->c = c;
-        node->left = NULL;
-        node->right = NULL;
-        node->str = exp;
-        node->leaf_id = id++;
-        return node;
-}
-
-char*
-substring(char* str, int i, int j)
-{
-        int n = j - i;
-        assert (0 <= n);
-        char* sub = (char*) malloc((n+1)*sizeof(char));
-        sub[n+1] = '\0'; 
-        memcpy(sub, str+i, n);
-        return sub;
-}
-
-/* 
- * BNF Parser
- */
-p_node_t*
-parse(char* expression)
-{       
-        int n = strlen(expression);
-        int l = 0;
-        int r = 0;
- 
-        printf("Expression: \"%s\" (n=%i)\n", expression, (int) strlen(expression));
-        if (n <= 1)  
-                return makeLeafNode(expression[0], expression);
-
-        for (int i = 0; i < n; i++) {
-                char c = expression[i];
-                if (c == '(') {
-                        l++;
-                } else if (c == ')')  {
-                        r++;
-                } else if (l - r == 1) {
-                        bool isUnaryOp = c == '*';
-                        bool isBinaryOp = isOp(c) && !isUnaryOp;
-
-                        p_node_t *left_p = parse(substring(expression, 1, i));
-
-                        if (isBinaryOp) {
-                                p_node_t *right_p = parse(substring(expression, i+1, (int) strlen(expression) - 1));
-                                return makeOpNode(c, left_p, right_p, expression);
-                        } else if (isUnaryOp) {
-                                return makeOpNode(c, left_p, NULL, expression); //Assuming unary op only uses left.
-                        }
-                }            
-        }
-        return NULL;
-}
+#include "set_helpers/set_helpers.c"
 
 /*
 *Return false if empty, return true if has empty string
@@ -338,7 +176,7 @@ compute_F(p_node_t* root_p)
         free(De);
         free(F0); //NOT THE FINAL F
 
-        return F1; //The final F
+        return F1;
 }
 
 void
