@@ -14,6 +14,7 @@ typedef struct p_node {
         char c;
         struct p_node* left;
         struct p_node* right;
+        char* str;
 } p_node_t; //Parse node
 
 bool
@@ -92,24 +93,26 @@ set_print(SimpleSet* set) {
 // }
 
 p_node_t*
-makeOpNode(char op, p_node_t *left_p, p_node_t *right_p)
+makeOpNode(char op, p_node_t *left_p, p_node_t *right_p, char* exp)
 {
         p_node_t* node = (p_node_t*) malloc(sizeof(p_node_t));
         node->isOp = true;
         node->c = op;
         node->left = left_p;
         node->right = right_p;
+        node->str = exp;
         return node;
 }
 
 p_node_t*
-makeLeafNode(char c)
+makeLeafNode(char c, char* exp)
 {
         p_node_t* node = (p_node_t*) malloc(sizeof(p_node_t));
         node->isOp = false;
         node->c = c;
         node->left = NULL;
         node->right = NULL;
+        node->str = exp;
         return node;
 }
 
@@ -118,7 +121,7 @@ substring(char* str, int i, int j)
 {
         int n = j - i;
         assert (0 <= n);
-        char* sub = malloc((n+1)*sizeof(char));
+        char* sub = (char*) malloc((n+1)*sizeof(char));
         sub[n+1] = '\0'; 
         memcpy(sub, str+i, n);
         return sub;
@@ -135,10 +138,8 @@ parse(char* expression)
         int r = 0;
  
         printf("Expression: \"%s\" (n=%i)\n", expression, (int) strlen(expression));
-        if (n <= 1) {
-                char c = expression[0];
-                return makeLeafNode(c);
-        }
+        if (n <= 1)  
+                return makeLeafNode(expression[0], expression);
 
         for (int i = 0; i < n; i++) {
                 char c = expression[i];
@@ -149,13 +150,14 @@ parse(char* expression)
                 } else if (l - r == 1) {
                         bool isUnaryOp = c == '*';
                         bool isBinaryOp = isOp(c) && !isUnaryOp;
+
+                        p_node_t *left_p = parse(substring(expression, 1, i));
+
                         if (isBinaryOp) {
-                                p_node_t *left_p = parse(substring(expression, 1, i));
                                 p_node_t *right_p = parse(substring(expression, i+1, (int) strlen(expression) - 1));
-                                return makeOpNode(c, left_p, right_p);
+                                return makeOpNode(c, left_p, right_p, expression);
                         } else if (isUnaryOp) {
-                                p_node_t *subformula = parse(substring(expression, 2, (int) strlen(expression) - 1));
-                                return makeOpNode(c, subformula, NULL); //Assume unary op only uses left.
+                                return makeOpNode(c, left_p, NULL, expression); //Assuming unary op only uses left.
                         }
                 }            
         }
@@ -202,7 +204,8 @@ compute_P(p_node_t* root_p)
 
         char c = root_p->c;
         if (!root_p->isOp) {
-                set_add_char(P, c);
+                if (c != '\0')
+                        set_add_char(P, c);
                 return P;
         } 
 
@@ -228,6 +231,8 @@ compute_P(p_node_t* root_p)
         free(L);
         free(R);
 
+        printf("P(\"%s\"): ", root_p->str);
+        set_print(P);
         return P;
 }
 
@@ -243,7 +248,8 @@ compute_D(p_node_t* root_p)
 
         char c = root_p->c;
         if (!root_p->isOp) {
-                set_add_char(D, c);
+                if (c != '\0')
+                        set_add_char(D, c);
                 return D;
         } 
 
@@ -269,6 +275,8 @@ compute_D(p_node_t* root_p)
         free(L);
         free(R);
 
+        printf("D(\"%s\"): ", root_p->str);
+        set_print(D);
         return D;
 }
 
@@ -286,7 +294,7 @@ glushkov(char* regex)
 
         //Step 2: Compute sets P, D and F
         SimpleSet* P = compute_P(root_p);
-        SimpleSet* D = compute_P(root_p);
+        SimpleSet* D = compute_D(root_p);
         printf("P: ");
         set_print(P);
         printf("D: ");
@@ -299,7 +307,7 @@ int
 main(void)
 {
         //char* regex = "(((a.((a.b)*))*)+((b.a)*))"; //BNAF of (a(ab)*)* + (ba)*
-        char* regex = "(a.b)";
+        char* regex = "((a.b).c)";
         glushkov(regex);
 
         printf("Done!");
