@@ -82,11 +82,13 @@ set_concat(SimpleSet* set0, SimpleSet* set1) {
         char** arr1 = set_to_array(set1, &size1);
         for (int i = 0; i < (int) size0; i++) {
                 for (int j = 0; j < (int) size1; j++) {
-                        int l0 = (int) strlen(arr0[i]);
-                        int l1 = (int) strlen(arr1[j]);
+                        char* str0 = arr0[i];
+                        char* str1 = arr1[j];
+                        int l0 = (int) strlen(str0);
+                        int l1 = (int) strlen(str1);
                         char* concat_str = (char *) malloc((l0+l1+1)*sizeof(char));
-                        memcpy(concat_str, arr0[i], l0);
-                        memcpy(concat_str + l0, arr1[j], l1 + 1); // +1 adds '\0' as well.
+                        memcpy(concat_str, str0, l0);
+                        memcpy(concat_str + l0, str1, l1 + 1); // +1 adds '\0' as well.
                         set_add(set2, concat_str);
                 }          
         }
@@ -293,40 +295,53 @@ compute_F(p_node_t* root_p)
                 SimpleSet* F = (SimpleSet*) malloc(sizeof(SimpleSet));
                 set_init(F);
                 return F;
-        }
-
-        SimpleSet* L = compute_F(root_p->left);
-        SimpleSet* F = L;
-
+        } 
+              
         char op = root_p-> c;
 
+        SimpleSet* F0;
+        SimpleSet* L = compute_F(root_p->left);
+
         if (op == '+' || op == '.') {
+                F0 = (SimpleSet*) malloc(sizeof(SimpleSet));
+                set_init(F0);
                 SimpleSet* R = compute_F(root_p->right);
-                set_union(F, F, R);
+                set_union(F0, L, R); //Let F0 = F(e) union F(f)
                 free(R);
+                free(L);
+                
+                if(op == '+') {
+                        return F0;
+                }
+        } else { //op == '*'
+                F0 = L; //Let F0 = L = F(e)
         }
 
+
+        SimpleSet* F1;
         if (op == '.' || op == '*') {
+                F1 = (SimpleSet*) malloc(sizeof(SimpleSet));
+                set_init(F1);
+
                 SimpleSet* De = compute_D(root_p->left);
                 if (op == '.') {
                         SimpleSet* Pf = compute_P(root_p->right);
                         SimpleSet* DePf = set_concat(De, Pf);
-                        set_union(F, F, DePf);
+                        set_union(F1, F0, DePf);
                         free(DePf);
                         free(Pf);
                 } else { //op == '*'
                         SimpleSet* Pe = compute_P(root_p->left);
                         SimpleSet* DePe = set_concat(De, Pe);
-                        set_union(F, F, DePe);
+                        set_union(F1, F0, DePe);
                         free(DePe); 
                         free(Pe);   
                 }
                 free(De);
+                free(F0); //NOT THE FINAL F
         }
 
-        printf("F(\"%s\"): ", root_p->str);
-        set_print(F);
-        return F;
+        return F1; //The final F
 }
 
 void
@@ -342,18 +357,17 @@ glushkov(char* regex)
         p_node_t* root_p = parse(regex);
 
         //Step 2: Compute sets P, D and F
-        // SimpleSet* P = compute_P(root_p);
-        // SimpleSet* D = compute_D(root_p);
+        SimpleSet* P = compute_P(root_p);
+        SimpleSet* D = compute_D(root_p);
         SimpleSet* F = compute_F(root_p);
 
-        // printf("P: ");
-        // set_print(P);
-        // printf("D: ");
-        // set_print(D);
+        printf("P: ");
+        set_print(P);
+        printf("D: ");
+        set_print(D);
         printf("F: ");
         set_print(F);
-
-        // SimpleSet F;
+                    
 }
 
 int
