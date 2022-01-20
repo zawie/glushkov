@@ -5,6 +5,7 @@
 #include <assert.h>
 #include "set/src/set.h"
 #include "set/src/set.c"
+#include <math.h>
 
 // Set definitions.
 #define SET_SIZE 256
@@ -12,6 +13,7 @@
 typedef struct p_node {
         bool isOp;
         char c;
+        int leaf_id; //Unique ID for leaves
         struct p_node* left;
         struct p_node* right;
         char* str;
@@ -44,10 +46,14 @@ isKeyChar(char c) {
 }
 
 int
-set_add_char(SimpleSet* set, char c) {
-        char* str = (char*) malloc(2*sizeof(char));
-        str[0] = c;
-        str[1] = '\0';
+set_add_node(SimpleSet* set, p_node_t* node) {
+        int id = node->leaf_id; //Unique ID for linerization. 
+        char c = node->c; //Actual character being repsented.
+
+        char* str = (char*) malloc((int)((ceil(log10(id))+2)*sizeof(char)));
+        str[0] = c; 
+        sprintf(str+1, "%i", node->leaf_id); 
+
         return set_add(set, str);
 }
 
@@ -55,42 +61,15 @@ void
 set_print(SimpleSet* set) {
         uint64_t size;
         char** arr = set_to_array(set, &size);
+
         int n = (int) size;
         printf("(Size: %i) ", n);
         for(int i = 0; i < n; i++) 
-                printf("%c, ", (*arr)[i]);
+                printf("%s, ", arr[i]);
         printf("\n");
+        free(arr);
         return;
 }
- 
-// int
-// linearize(char* regex, char** linear_regex, char** mapping)
-// {
-//         int i, j;
-//         int n = 0; //Number of characters to linearize.
-
-//         i = 0;
-//         while (regex[i] != '\0') {
-//                 n += isKeyChar(regex[i]) ? 0 : 1;
-//                 i++;
-//         }
-
-//         *linear_regex = malloc(n*sizeof(int));
-//         *mapping = malloc(n*sizeof(char));
-
-//         i = 0;
-//         j = 0;
-//         while (j < n) {
-//                 char c = regex[i];
-//                 (*linear_regex)[i] = isKeyChar(c) ? c : j;
-//                 if (!isKeyChar(c)) {
-//                         (*mapping)[j] = c;
-//                         j++;
-//                 }
-//                 i++;
-//         }
-//         return n;
-// }
 
 p_node_t*
 makeOpNode(char op, p_node_t *left_p, p_node_t *right_p, char* exp)
@@ -98,7 +77,7 @@ makeOpNode(char op, p_node_t *left_p, p_node_t *right_p, char* exp)
         p_node_t* node = (p_node_t*) malloc(sizeof(p_node_t));
         node->isOp = true;
         node->c = op;
-        node->left = left_p;
+        node->left = left_p; 
         node->right = right_p;
         node->str = exp;
         return node;
@@ -107,12 +86,14 @@ makeOpNode(char op, p_node_t *left_p, p_node_t *right_p, char* exp)
 p_node_t*
 makeLeafNode(char c, char* exp)
 {
+        static int id = 0;
         p_node_t* node = (p_node_t*) malloc(sizeof(p_node_t));
         node->isOp = false;
         node->c = c;
         node->left = NULL;
         node->right = NULL;
         node->str = exp;
+        node->leaf_id = id++;
         return node;
 }
 
@@ -132,7 +113,7 @@ substring(char* str, int i, int j)
  */
 p_node_t*
 parse(char* expression)
-{
+{       
         int n = strlen(expression);
         int l = 0;
         int r = 0;
@@ -205,7 +186,7 @@ compute_P(p_node_t* root_p)
         char c = root_p->c;
         if (!root_p->isOp) {
                 if (c != '\0')
-                        set_add_char(P, c);
+                        set_add_node(P, root_p);
                 return P;
         } 
 
@@ -249,7 +230,7 @@ compute_D(p_node_t* root_p)
         char c = root_p->c;
         if (!root_p->isOp) {
                 if (c != '\0')
-                        set_add_char(D, c);
+                        set_add_node(D, root_p);
                 return D;
         } 
 
@@ -307,7 +288,7 @@ int
 main(void)
 {
         //char* regex = "(((a.((a.b)*))*)+((b.a)*))"; //BNAF of (a(ab)*)* + (ba)*
-        char* regex = "((a.b).c)";
+        char* regex = "((a.b).a)";
         glushkov(regex);
 
         printf("Done!");
