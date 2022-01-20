@@ -308,38 +308,35 @@ compute_F(p_node_t* root_p)
                 SimpleSet* R = compute_F(root_p->right);
                 set_union(F0, L, R); //Let F0 = F(e) union F(f)
                 free(R);
-                free(L);
-                
-                if(op == '+') {
-                        return F0;
-                }
-        } else { //op == '*'
-                F0 = L; //Let F0 = L = F(e)
+                free(L);     
         }
-
+        if (op == '*')
+                F0 = L; //Let F0 = L = F(e)
+        if(op == '+')
+                return F0;
+        
+        //Note, op == '+' or op == '*'
 
         SimpleSet* F1;
-        if (op == '.' || op == '*') {
-                F1 = (SimpleSet*) malloc(sizeof(SimpleSet));
-                set_init(F1);
+        F1 = (SimpleSet*) malloc(sizeof(SimpleSet));
+        set_init(F1);
 
-                SimpleSet* De = compute_D(root_p->left);
-                if (op == '.') {
-                        SimpleSet* Pf = compute_P(root_p->right);
-                        SimpleSet* DePf = set_concat(De, Pf);
-                        set_union(F1, F0, DePf);
-                        free(DePf);
-                        free(Pf);
-                } else { //op == '*'
-                        SimpleSet* Pe = compute_P(root_p->left);
-                        SimpleSet* DePe = set_concat(De, Pe);
-                        set_union(F1, F0, DePe);
-                        free(DePe); 
-                        free(Pe);   
-                }
-                free(De);
-                free(F0); //NOT THE FINAL F
+        SimpleSet* De = compute_D(root_p->left);
+        if (op == '.') {
+                SimpleSet* Pf = compute_P(root_p->right);
+                SimpleSet* DePf = set_concat(De, Pf);
+                set_union(F1, F0, DePf);
+                free(DePf);
+                free(Pf);
+        } else { //op == '*'
+                SimpleSet* Pe = compute_P(root_p->left);
+                SimpleSet* DePe = set_concat(De, Pe);
+                set_union(F1, F0, DePe);
+                free(DePe); 
+                free(Pe);   
         }
+        free(De);
+        free(F0); //NOT THE FINAL F
 
         return F1; //The final F
 }
